@@ -1,55 +1,59 @@
 var http = require('http');
 var express = require('express');
+const Speech = require('@google-cloud/speech');
 var app = express();
-app.use(express.static(__dirname));
 require('dotenv').config();
-
-
-app.get('/authorize_user', function(req, res) {
-  ig.use({ client_id: process.env.INSTAGRAM_CLIENT_ID,
-    client_secret: process.env.INSTAGRAM_CLIENT_SECRET});
-  res.redirect(ig.get_authorization_url(redirect_uri));
+app.use(express.static(__dirname));
+app.use(function (req, res, next) {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8080');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  next();
 });
 
-app.get('/handleauth', function(req, res) {
-  ig.use({ client_id: process.env.INSTAGRAM_CLIENT_ID,
-    client_secret: process.env.INSTAGRAM_CLIENT_SECRET});
+app.get('/recognise', function(req, res) {
+  function syncRecognize (filename) {
+    const speech = Speech();
 
-  ig.authorize_user(req.query.code, redirect_uri, function(err, result) {
-    if (err) {
-      console.log(err.body);
-      res.send("Didn't work");
-    } else {
-      console.log('Yay! Access token is ' + result.access_token);
-      req.session.authorised_user = result;
-      res.redirect('/');
-    }
-  });
+    const config = {
+      encoding: 'LINEAR16',
+      sampleRate: 16000
+    };
+
+    return speech.recognize(filename, config)
+      .then((results) => {
+        const transcription = results[0];
+        console.log(`Transcription: ${transcription}`);
+        res.send({transcription: transcription});
+      }).catch(function(error) {
+        res.send('error')
+      });
+  };
+
+  syncRecognize('audio.raw');
+
+  // function streamingMicRecognize () {
+  //   const speech = Speech();
+
+  //   const options = {
+  //     config: {
+  //       encoding: 'LINEAR16',
+  //       sampleRate: 16000
+  //     }
+  //   };
+
+  //   const recognizeStream = speech.createRecognizeStream(options)
+  //     .on('error', console.error)
+  //     .on('data', (data) => {
+  //       console.log(data.results)
+  //       // process.stdout.write(data.results)
+  //     });
+
+  //   record.start({ sampleRate: 16000 }).pipe(recognizeStream);
+
+  //   console.log('Listening, press Ctrl+C to stop.');
+  // }
 });
 
-app.get('/accesstoken', function(req, res){
-  if(req.session.authorised_user == null){
-    res.send(false);
-  }else{
-    res.send(true);
-  }
-});
-
-app.get('/posts', function(req, res){
-  ig.use({ client_id: process.env.INSTAGRAM_CLIENT_ID,
-      client_secret: process.env.INSTAGRAM_CLIENT_SECRET,
-      access_token: req.session.authorised_user.access_token});
-
-  ig.user_media_recent(req.session.authorised_user.user.id, 8, function(err, medias, pagination, remaining, limit) {
-    if (err){
-      console.log(err.body);
-      return "Could not get user";
-    }else {
-      console.log('user successfully fetched', medias);
-      res.send(medias);
-    }
-  });
-
-});
-
-app.listen(8080);
+app.listen(3000);
