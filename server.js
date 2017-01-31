@@ -40,4 +40,22 @@ app.post('/recognise', function(req, res) {
 
 });
 
+app.post('/findsongs', function(req, res) {
+
+  var url = 'https://api.musixmatch.com/ws/1.1/track.search?format=jsonp&callback=callback&q_lyrics=' +
+  req.body.transcription +
+  '&quorum_factor=1&apikey=' +
+  process.env.MUSIXMATCH_KEY
+
+  request(url, function(err, response, body){
+    if (!err && response.statusCode == 200) {
+      console.log(body);
+      res.send(body);
+    } else {
+      console.log(err, response);
+    }
+  });
+
+});
+
 app.listen(3000);
