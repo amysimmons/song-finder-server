@@ -2,6 +2,7 @@ const Speech = require('@google-cloud/speech');
 const google = require('googleapis');
 const http = require('http');
 const request = require('request');
+const rp = require('request-promise');
 const bodyParser = require('body-parser')
 const express = require('express');
 const fs = require('fs');
@@ -43,33 +44,49 @@ app.post('/recognise', function(req, res) {
 });
 
 app.post('/findsongs', function(req, res) {
-  var url = 'https://api.musixmatch.com/ws/1.1/track.search?format=json&callback=callback&q_lyrics=' +
+
+  const url1 = 'https://api.musixmatch.com/ws/1.1/track.search?format=json&callback=callback&q_lyrics=' +
   req.body.transcription +
   '&quorum_factor=1&apikey=' +
   process.env.MUSIXMATCH_KEY
 
-  request(url, function(err, response, body){
-    if (!err && response.statusCode == 200) {
+  var a = rp(url1)
+    .then(response => {
+      const songData = JSON.parse(response);
+      const songMatches = songData.message.body.track_list;
+      const firstSongMatch = songMatches[0].track;
+      const youtubeQuery = firstSongMatch.track_name + " " + firstSongMatch.artist_name
 
+      const url2 = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=5&q=" +
+      encodeURIComponent(youtubeQuery) +
+      "&safeSearch=moderate&type=video&videoEmbeddable=true&key=" +
+      process.env.GOOGLE_SPEECH_KEY
 
-      res.send(body);
+      return {songMatches, url2};
+    });
 
-      var data = json.parse(body)
+  var b = a.then(function(resultA) {
 
-      var title = encodeURIComponent(data.message.body.track_list[0].track.track_name);
-      var artist = encodeURIComponent(data.message.body.track_list[0].track.artist_name);
+    rp(resultA.url2)
+      .then(response => {
 
-      res.redirect(200, '/mainsong=' + title + artist);
-    } else {
-      console.log('err', err, 'response', response);
-    }
-  });
-});
+        const videoData = JSON.parse(response);
+        const videoIds = videoData.items.map(function(video){
+          return video.id.videoId
+        });
 
-app.post('/mainsong', function(req, res) {
-  console.log('in main song')
-  console.log(req.query.valid)
-  console.log(req.params);
+        const result = {
+          otherLyricMatches: resultA.songMatches,
+          bestMatchVideo: videoIds[0]
+        };
+
+        res.send(result);
+
+        return result;
+      })
+
+  }).catch(err => console.log('hello', err)) // Don't forget to catch errors
+
 });
 
 app.listen(3000);
