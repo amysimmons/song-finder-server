@@ -32,10 +32,10 @@ app.post('/recognise', function(req, res) {
 
   fs.writeFile("out.raw", req.body.base64, 'base64', function(err) {
     if(err){
-      console.log(err);
+      console.log('in error', err);
     }else {
-      recognise.syncRecognize('audio.raw').then((result) => {
-        console.log(result);
+      recognise.syncRecognize('out.raw').then((result) => {
+        console.log('in result', result);
         res.send(result);
       })
     }
@@ -60,7 +60,7 @@ app.post('/findsongs', function(req, res) {
       const url2 = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=5&q=" +
       encodeURIComponent(youtubeQuery) +
       "&safeSearch=moderate&type=video&videoEmbeddable=true&key=" +
-      process.env.GOOGLE_SPEECH_KEY
+      process.env.GOOGLE_CLOUD_KEY
 
       return {songMatches, url2};
     });
@@ -85,8 +85,7 @@ app.post('/findsongs', function(req, res) {
         return result;
       })
 
-  }).catch(err => console.log('hello', err)) // Don't forget to catch errors
-
+  }).catch(err => console.log('hello', err))
 });
 
 app.listen(3000);

@@ -1,6 +1,7 @@
 .env
 node_modules
 song-finder-bee1fc336b0c.json
+song-finder-6e3e370580aa.json
 audio.raw
 out.raw
 notes.js
