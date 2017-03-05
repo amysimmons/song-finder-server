@@ -29,18 +29,11 @@ app.use(bodyParser.urlencoded({
 app.set('jsonp callback name', 'callback');
 
 app.post('/recognise', function(req, res) {
-
-  fs.writeFile("out.raw", req.body.base64, 'base64', function(err) {
-    if(err){
-      console.log('in error', err);
-    }else {
-      recognise.syncRecognize('out.raw').then((result) => {
-        console.log('in result', result);
-        res.send(result);
-      })
-    }
-  });
-
+    //THIS IS NOT WORKING!
+    recognise.syncRecognize(req.body.base64).then((result) => {
+      console.log('result', result);
+      res.send(result);
+    });
 });
 
 app.post('/findsongs', function(req, res) {
