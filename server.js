@@ -1,4 +1,3 @@
-const Speech = require('@google-cloud/speech');
 const google = require('googleapis');
 const http = require('http');
 const request = require('request');
@@ -7,7 +6,6 @@ const bodyParser = require('body-parser')
 const express = require('express');
 const fs = require('fs');
 const app = express();
-const recognise = require('./syncRecognize.js');
 require('dotenv').config();
 
 app.use(express.static(__dirname));
@@ -27,14 +25,6 @@ app.use(bodyParser.urlencoded({
 }));
 
 app.set('jsonp callback name', 'callback');
-
-app.post('/recognise', function(req, res) {
-    //THIS IS NOT WORKING!
-    recognise.syncRecognize(req.body.base64).then((result) => {
-      console.log('result', result);
-      res.send(result);
-    });
-});
 
 app.post('/findsongs', function(req, res) {
 
